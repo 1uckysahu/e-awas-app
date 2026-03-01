@@ -419,5 +419,8 @@
   "pay_securely": "सुरक्षित रूप से भुगतान करें",
   "e_awas_logo": "ई-आवास लोगो",
   "e_awas": "ई-आवास",
-  "official_housing_allotment_system": "आधिकारिक आवास आवंटन प्रणाली"
+  "official_housing_allotment_system": "आधिकारिक आवास आवंटन प्रणाली",
+  "admin_control_panel": "एडमिन कंट्रोल पैनल",
+  "search_guest_house": "गेस्ट हाउस खोजें...",
+  "no_bookings_found": "कोई बुकिंग नहीं मिली।"
 }

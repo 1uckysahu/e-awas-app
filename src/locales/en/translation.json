@@ -418,5 +418,8 @@
   "pay_securely": "Pay Securely",
   "e_awas_logo": "E-Awas Logo",
   "e_awas": "E-AWAS",
-  "official_housing_allotment_system": "Official Housing Allotment System"
+  "official_housing_allotment_system": "Official Housing Allotment System",
+  "admin_control_panel": "Admin Control Panel",
+  "search_guest_house": "Search guest houses...",
+  "no_bookings_found": "No bookings found."
 }

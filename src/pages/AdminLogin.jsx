@@ -18,7 +18,8 @@ import {
 import { Email, Lock, Visibility, VisibilityOff, AdminPanelSettings } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase'; 
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase'; 
 import { useTranslation } from 'react-i18next';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { ThemeProvider } from '@mui/material/styles';
@@ -45,27 +46,35 @@ const AdminLogin = () => {
             return;
         }
 
-        // Hardcoded admin credentials
-        const ADMIN_EMAIL = "admin@eawas.gov.in";
-        const ADMIN_PASSWORD = "Admin@eawas.2024";
-
-        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-            try {
-                // Sign in with a dummy or pre-created admin account in Firebase Auth if needed
-                // For this example, we'll just simulate a successful login
-                // const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        try {
+            // Real Firebase Authentication
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // Check against your specific Admin UID
+            if (user.uid === 'HelxiXRDkWREWG2GTeofSTbTO4p1') {
+                // Update Firestore profile
+                await setDoc(doc(db, 'users', user.uid), {
+                    email: user.email,
+                    isAdmin: true,
+                    officerType: 'Admin'
+                }, { merge: true });
+                
+                localStorage.setItem('userType', 'admin');
                 setSnackbar({ open: true, message: t('login_successful'), severity: 'success' });
                 navigate('/admin-dashboard');
-            } catch (error) {
-                setSnackbar({ open: true, message: t('login_failed_error'), severity: 'error' });
+            } else {
+                setSnackbar({ open: true, message: t('access_denied_admin'), severity: 'error' });
             }
-        } else {
-            setSnackbar({ open: true, message: t('access_denied_admin'), severity: 'error' });
+        } catch (error) {
+            setSnackbar({ open: true, message: t('login_failed_error'), severity: 'error' });
+        } finally {
+            setLoading(false);
+            if (recaptchaRef.current) {
+                recaptchaRef.current.reset();
+            }
+            setCaptchaValue(null);
         }
-
-        setLoading(false);
-        recaptchaRef.current.reset();
-        setCaptchaValue(null);
     };
 
     const togglePasswordVisibility = () => {
