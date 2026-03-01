@@ -22,6 +22,7 @@ import PublicGuestHouses from './pages/PublicGuestHouses';
 import PublicQuarters from './pages/PublicQuarters';
 import Availability from './pages/Availability';
 import Payment from './pages/Payment';
+import ProtectedRoute from './components/ProtectedRoute'; // <-- Added Import
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from './firebase';
@@ -29,25 +30,52 @@ import { auth, db } from './firebase';
 const AppRoutes = ({ user }) => {
     return (
         <Routes>
+            {/* PUBLIC ROUTES (Unwrapped) */}
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/officer-login" element={<OfficerLogin />} />
-            <Route path="/guest-house-dashboard" element={<GuestHouseDashboard />} />
             <Route path="/guest-houses" element={<PublicGuestHouses />} />
             <Route path="/guesthouse/:id" element={<GuestHouseDetail />} />
             <Route path="/book-guesthouse/:id" element={<BookGuestHouse />} />
-            <Route path="/quarter-officer-dashboard" element={<QuarterOfficerDashboard />} />
             <Route path="/quarters" element={<PublicQuarters />} />
             <Route path="/quarter/:quarterId" element={<QuarterDetail />} />
-            <Route path="/user-dashboard" element={<UserDashboard user={user} />} />
-            <Route path="/government-dashboard" element={<GovernmentDashboard user={user} />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/help" element={<Help />} />
             <Route path="/availability" element={<Availability />} />
             <Route path="/payment/:applicationId" element={<Payment />} />
+
+            {/* STRICT PROTECTED ROUTES (Wrapped) */}
+            <Route path="/admin-dashboard" element={
+                <ProtectedRoute user={user} allowedRoles={['Admin']}>
+                    <AdminDashboard />
+                </ProtectedRoute>
+            } />
+            
+            <Route path="/quarter-officer-dashboard" element={
+                <ProtectedRoute user={user} allowedRoles={['Quarter Officer']}>
+                    <QuarterOfficerDashboard />
+                </ProtectedRoute>
+            } />
+            
+            <Route path="/guest-house-dashboard" element={
+                <ProtectedRoute user={user} allowedRoles={['Guest House Officer']}>
+                    <GuestHouseDashboard />
+                </ProtectedRoute>
+            } />
+            
+            <Route path="/user-dashboard" element={
+                <ProtectedRoute user={user} allowedRoles={['public', 'government']}>
+                    <UserDashboard user={user} />
+                </ProtectedRoute>
+            } />
+            
+            <Route path="/government-dashboard" element={
+                <ProtectedRoute user={user} allowedRoles={['government']}>
+                    <GovernmentDashboard user={user} />
+                </ProtectedRoute>
+            } />
         </Routes>
     );
 };

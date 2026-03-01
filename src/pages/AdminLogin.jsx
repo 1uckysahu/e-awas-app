@@ -60,7 +60,7 @@ const AdminLogin = () => {
                     officerType: 'Admin'
                 }, { merge: true });
                 
-                localStorage.setItem('userType', 'admin');
+                localStorage.setItem('userType', 'Admin');
                 setSnackbar({ open: true, message: t('login_successful'), severity: 'success' });
                 navigate('/admin-dashboard');
             } else {
