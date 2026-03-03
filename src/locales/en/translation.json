@@ -421,5 +421,6 @@
   "official_housing_allotment_system": "Official Housing Allotment System",
   "admin_control_panel": "Admin Control Panel",
   "search_guest_house": "Search guest houses...",
-  "no_bookings_found": "No bookings found."
+  "no_bookings_found": "No bookings found.",
+  "no_quarters_found": "No Quarters Found."
 }
