@@ -113,8 +113,9 @@ const MyBookings = ({ user }) => {
                 ) : (
                     <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 'none', border: '1px solid #e0e0e0', borderRadius: 2 }}>
                         <Table aria-label={t('bookings_table')}>
-                            <TableHead sx={{ bgcolor: '#f7f9fc' }}>
+                             <TableHead sx={{ bgcolor: '#f7f9fc' }}>
                                 <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>{t('application_id')}</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>{t('guest_house')}</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>{t('check_in')}</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>{t('check_out')}</TableCell>
@@ -125,6 +126,7 @@ const MyBookings = ({ user }) => {
                             <TableBody>
                                 {bookings.map((booking) => (
                                     <TableRow key={booking.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell sx={{ fontFamily: 'monospace' }}>{booking.id}</TableCell>
                                         <TableCell component="th" scope="row">{booking.guestHouseName}</TableCell>
                                         <TableCell>{formatDate(booking.startDate)}</TableCell>
                                         <TableCell>{formatDate(booking.endDate)}</TableCell>

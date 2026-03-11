@@ -26,6 +26,7 @@ import ProtectedRoute from './components/ProtectedRoute'; // <-- Added Import
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from './firebase';
+import ApplicationStatus from './pages/ApplicationStatus';
 
 const AppRoutes = ({ user }) => {
     return (
@@ -45,6 +46,7 @@ const AppRoutes = ({ user }) => {
             <Route path="/help" element={<Help />} />
             <Route path="/availability" element={<Availability />} />
             <Route path="/payment/:applicationId" element={<Payment />} />
+            <Route path="/status" element={<ApplicationStatus />} />
 
             {/* STRICT PROTECTED ROUTES (Wrapped) */}
             <Route path="/admin-dashboard" element={
