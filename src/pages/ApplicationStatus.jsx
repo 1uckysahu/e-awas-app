@@ -3,7 +3,8 @@ import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import {
     Container, TextField, Button, CircularProgress, Typography, Box, Alert, Paper,
-    Grid, Chip
+    Chip, Divider, TableContainer, Table, TableBody, TableRow, TableCell,
+    RadioGroup, FormControlLabel, Radio, FormControl
 } from '@mui/material';
 import { Assignment, Person, Home, Event } from '@mui/icons-material';
 
@@ -12,6 +13,7 @@ const ApplicationStatus = () => {
     const [application, setApplication] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [applicationType, setApplicationType] = useState('guestHouseBooking');
 
     const handleSearch = async () => {
         if (!applicationId) {
@@ -21,11 +23,42 @@ const ApplicationStatus = () => {
         setLoading(true);
         setError(null);
         setApplication(null);
+
         try {
-            const appDocRef = doc(db, 'applications', applicationId);
-            const appDocSnap = await getDoc(appDocRef);
-            if (appDocSnap.exists()) {
-                const appData = appDocSnap.data();
+            let appData = null;
+            let docId = applicationId;
+
+            if (applicationType === 'guestHouseBooking') {
+                const appDocRef = doc(db, 'applications', applicationId);
+                const appDocSnap = await getDoc(appDocRef);
+                if (appDocSnap.exists() && appDocSnap.data().applicationType === 'guestHouseBooking') {
+                    appData = { ...appDocSnap.data(), status: appDocSnap.data().status };
+                }
+            } else if (applicationType === 'quarterApplication') {
+                // Step 1: Always find the base application in the 'applications' collection first.
+                const mainAppRef = doc(db, 'applications', applicationId);
+                const mainAppSnap = await getDoc(mainAppRef);
+
+                if (mainAppSnap.exists()) {
+                    const baseData = mainAppSnap.data();
+                    let finalData = { ...baseData };
+                    let finalStatus = baseData.status;
+
+                    // Step 2: Check for a vacated record to merge and get the vacatedOn date.
+                    const vacatedAppRef = doc(db, 'vacatedApplications', applicationId);
+                    const vacatedAppSnap = await getDoc(vacatedAppRef);
+
+                    if (vacatedAppSnap.exists()) {
+                        const vacatedData = vacatedAppSnap.data();
+                        // Merge to ensure we get the vacatedOn date and any other relevant fields.
+                        finalData = { ...baseData, ...vacatedData }; 
+                        finalStatus = 'vacated'; // Set the definitive status.
+                    }
+                    appData = { ...finalData, status: finalStatus };
+                }
+            }
+
+            if (appData) {
                 let applicantName = 'N/A';
                 if (appData.userId) {
                     const userDocRef = doc(db, 'users', appData.userId);
@@ -34,9 +67,9 @@ const ApplicationStatus = () => {
                         applicantName = userDocSnap.data().fullName || 'N/A';
                     }
                 }
-                setApplication({ id: appDocSnap.id, ...appData, applicantName });
+                setApplication({ id: docId, ...appData, applicantName });
             } else {
-                setError('Application not found.');
+                setError('Application not found. Please check the ID and selected type.');
             }
         } catch (err) {
             setError('An error occurred while fetching the application.');
@@ -44,31 +77,64 @@ const ApplicationStatus = () => {
         }
         setLoading(false);
     };
-
+    
     const getStatusChip = () => {
-        if (!application) return null;
+        if (!application || !application.status) return null;
         let color = 'default';
-        if (application.status === 'confirmed') color = 'success';
-        if (application.status === 'pending' || application.status === 'pending_payment') color = 'warning';
-        if (application.status === 'rejected') color = 'error';
-        return <Chip label={application.status.replace('_', ' ').toUpperCase()} color={color} sx={{ fontWeight: 'bold' }} />;
+        let label = application.status.replace('_', ' ').toUpperCase();
+
+        switch (application.status) {
+            case 'confirmed':
+                color = 'success';
+                break;
+            case 'pending':
+            case 'pending_payment':
+                color = 'warning';
+                break;
+            case 'rejected':
+                color = 'error';
+                break;
+            case 'vacated':
+                color = 'info';
+                label = 'VACATED';
+                break;
+            default:
+                break;
+        }
+
+        return <Chip label={label} color={color} sx={{ fontWeight: 'bold' }} />;
     };
 
-    const renderApplicationDates = () => {
+    const renderDateRow = () => {
         if (!application) return null;
-        const { startDate, endDate, createdAt, applicationType } = application;
-        let dateString = 'N/A';
-        if (applicationType === 'guestHouseBooking' && startDate && endDate) {
-            dateString = `${new Date(startDate.seconds * 1000).toLocaleDateString()} - ${new Date(endDate.seconds * 1000).toLocaleDateString()}`;
+
+        let label = 'Applied On';
+        let dateString = application.createdAt ? new Date(application.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+
+        if (application.status === 'vacated') {
+            label = 'Vacated On';
+            dateString = application.vacatedOn ? new Date(application.vacatedOn.seconds * 1000).toLocaleDateString() : 'N/A';
+        } else if (application.applicationType === 'guestHouseBooking') {
+            label = 'Booking Dates';
+            if (application.startDate && application.endDate) {
+                dateString = `${new Date(application.startDate.seconds * 1000).toLocaleDateString()} - ${new Date(application.endDate.seconds * 1000).toLocaleDateString()}`;
+            } else {
+                dateString = 'N/A';
+            }
         }
-        if (applicationType === 'quarterApplication' && createdAt) {
-            dateString = new Date(createdAt.seconds * 1000).toLocaleDateString();
-        }
+
         return (
-             <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Event sx={{ color: 'primary.main' }}/>
-                <Typography><strong>{application.applicationType === 'guestHouseBooking' ? 'Booking Dates' : 'Applied On'}:</strong> {dateString}</Typography>
-            </Grid>
+            <TableRow>
+                <TableCell sx={{ width: '50%', p: { xs: 1, sm: 2 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Event sx={{ color: 'primary.main' }}/>
+                        <Typography><strong>{label}:</strong></Typography>
+                    </Box>
+                </TableCell>
+                <TableCell sx={{ p: { xs: 1, sm: 2 } }}>
+                    <Typography>{dateString}</Typography>
+                </TableCell>
+            </TableRow>
         );
     };
 
@@ -78,6 +144,12 @@ const ApplicationStatus = () => {
                 <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
                     Check Application Status
                 </Typography>
+                <FormControl component="fieldset" sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                    <RadioGroup row value={applicationType} onChange={(e) => setApplicationType(e.target.value)}>
+                        <FormControlLabel value="guestHouseBooking" control={<Radio />} label="Guest House Booking" />
+                        <FormControlLabel value="quarterApplication" control={<Radio />} label="Quarter Application" />
+                    </RadioGroup>
+                </FormControl>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', my: 3, gap: 2 }}>
                     <TextField
                         fullWidth
@@ -95,26 +167,52 @@ const ApplicationStatus = () => {
                 {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
                 {application && (
-                    <Paper elevation={3} sx={{ p: 4, borderRadius: 3, mt: 4 }}>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                               <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Application Details</Typography>
-                               {getStatusChip()}
-                            </Grid>
-                            <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Assignment sx={{ color: 'primary.main' }}/>
-                                <Typography><strong>Application ID:</strong> {application.id}</Typography>
-                            </Grid>
-                             <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Person sx={{ color: 'primary.main' }}/>
-                                <Typography><strong>Applicant Name:</strong> {application.applicantName}</Typography>
-                            </Grid>
-                            <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Home sx={{ color: 'primary.main' }}/>
-                                <Typography><strong>Guest House/Quarter:</strong> {application.guestHouseName || application.quarterName || 'N/A'}</Typography>
-                            </Grid>
-                            {renderApplicationDates()}
-                        </Grid>
+                    <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 3, mt: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Application Details</Typography>
+                            {getStatusChip()}
+                        </Box>
+                        <Divider sx={{ my: 2 }} />
+                        <TableContainer>
+                            <Table sx={{ '& td': { border: 0, py: 1 } }}>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell sx={{ width: '50%', p: { xs: 1, sm: 2 } }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <Assignment sx={{ color: 'primary.main' }} />
+                                                <Typography><strong>Application ID:</strong></Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell sx={{ p: { xs: 1, sm: 2 } }}>
+                                            <Typography>{application.applicationNumber || application.id}</Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ width: '50%', p: { xs: 1, sm: 2 } }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <Person sx={{ color: 'primary.main' }}/>
+                                                <Typography><strong>Applicant Name:</strong></Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell sx={{ p: { xs: 1, sm: 2 } }}>
+                                            <Typography>{application.applicantName}</Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ width: '50%', p: { xs: 1, sm: 2 } }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <Home sx={{ color: 'primary.main' }}/>
+                                                <Typography><strong>{application.applicationType === 'guestHouseBooking' ? 'Guest House' : 'Quarter'}:</strong></Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell sx={{ p: { xs: 1, sm: 2 } }}>
+                                            <Typography>{application.guestHouseName || application.quarterName || 'N/A'}</Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                    {renderDateRow()}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
                     </Paper>
                 )}
             </Container>

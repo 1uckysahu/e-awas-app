@@ -9,7 +9,7 @@ const firebaseConfig = {
     storageBucket: "e-awas2.appspot.com",
     messagingSenderId: "146924491000",
     appId: "1:146924491000:web:0b89117ce8b09525662b0d",
-    measurementId: "G-XLK8BSQ9X4",
+    measurementId: "G-4X0V33ZY6V",
 };
 
 
