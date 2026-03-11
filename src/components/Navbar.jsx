@@ -62,23 +62,6 @@ const Navbar = ({ user }) => {
       fontWeight: 'bold'
     };
     
-    const isAuthPage = ['/login', '/register', '/admin-login', '/officer-login'].includes(location.pathname);
-
-    if (isAuthPage && !user) {
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
-          <Button color="inherit" component={Link} to="/" sx={buttonStyle}>{t('home')}</Button>
-          <Button color="inherit" component={Link} to="/register" sx={buttonStyle}>{t('registration')}</Button>
-           <Button color="inherit" component={Link} to="/status" sx={buttonStyle}>{t('status')}</Button>
-          <Button color="inherit" component={Link} to="/login" sx={buttonStyle}>{t('login')}</Button>
-          <Button color="inherit" component={Link} to="/admin-login" sx={buttonStyle}>{t('administration')}</Button>
-          <Button color="inherit" component={Link} to="/officer-login" sx={buttonStyle}>{t('officer_login')}</Button>
-          <Button color="inherit" component={Link} to="/help" sx={buttonStyle}>{t('help')}</Button>
-          <LanguageSwitcher />
-        </Box>
-      );
-    }
-    
     const isDashboardPage = location.pathname.includes('dashboard');
 
     if (user) {
@@ -117,6 +100,7 @@ const Navbar = ({ user }) => {
       );
     }
 
+    // Render a single, consistent set of links for all logged-out users
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
         <Button color="inherit" component={Link} to="/" sx={buttonStyle}>{t('home')}</Button>
