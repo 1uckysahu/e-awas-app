@@ -425,5 +425,15 @@
   "no_bookings_found": "कोई बुकिंग नहीं मिली।",
   "no_quarters_found": "कोई आवास उपलब्ध नहीं है",
   "no_notifications": "कोई अधिसूचना नहीं",
-   "notifications": "अधिसूचना"
+   "notifications": "अधिसूचना",
+   "check_application_status": "आवेदन की स्थिति जांचें",
+  "application_not_found_error": "आवेदन नहीं मिला",
+  "fetching_application_error": "आवेदन प्राप्त करने में असमर्थ",
+  "enter_your_application_id": "अपनी आवेदन आईडी दर्ज करें",
+  "quarter_application": "आवास आवेदन",
+  "vacated_on": "खाली करने की तिथि",
+  "quarter": "आवास",
+  "booking_dates": "बुकिंग की तिथियां",
+  "enter_application_id_error": "आवेदन आईडी आवश्यक है",
+  "search": "खोजें"
 }

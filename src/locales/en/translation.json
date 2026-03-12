@@ -424,5 +424,16 @@
   "no_bookings_found": "No bookings found.",
   "no_quarters_found": "No Quarters Found.",
   "no_notifications": "No Notifications.",
-  "notifications": "Notifications"
+  "notifications": "Notifications",
+  "check_application_status": "Check Application Status",
+  "application_not_found_error": "Application Not Found",
+  "fetching_application_error": "Unable To Fetch Application",
+  "enter_your_application_id": "Enter Your Application ID",
+  "quarter_application": "Quarter Application",
+  "vacated_on" : "Vacated On",
+  "quarter": "Quarter",
+  "booking_dates": "Booking Dates",
+  "enter_application_id_error": "Application ID is required",
+  "search": "SEARCH"
+
 }
