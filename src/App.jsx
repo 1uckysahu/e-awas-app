@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
 import { CssBaseline, Box, CircularProgress } from '@mui/material';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -22,93 +22,61 @@ import PublicGuestHouses from './pages/PublicGuestHouses';
 import PublicQuarters from './pages/PublicQuarters';
 import Availability from './pages/Availability';
 import Payment from './pages/Payment';
-import ProtectedRoute from './components/ProtectedRoute'; // <-- Added Import
+import ProtectedRoute from './components/ProtectedRoute';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from './firebase';
 import ApplicationStatus from './pages/ApplicationStatus';
 
-const AppRoutes = ({ user }) => {
-    return (
-        <Routes>
-            {/* PUBLIC ROUTES (Unwrapped) */}
-            <Route path="/" element={<Home />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/officer-login" element={<OfficerLogin />} />
-            <Route path="/guest-houses" element={<PublicGuestHouses />} />
-            <Route path="/guesthouse/:id" element={<GuestHouseDetail />} />
-            <Route path="/book-guesthouse/:id" element={<BookGuestHouse />} />
-            <Route path="/quarters" element={<PublicQuarters />} />
-            <Route path="/quarter/:quarterId" element={<QuarterDetail />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/availability" element={<Availability />} />
-            <Route path="/payment/:applicationId" element={<Payment />} />
-            <Route path="/status" element={<ApplicationStatus />} />
-
-            {/* STRICT PROTECTED ROUTES (Wrapped) */}
-            <Route path="/admin-dashboard" element={
-                <ProtectedRoute user={user} allowedRoles={['Admin']}>
-                    <AdminDashboard />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/quarter-officer-dashboard" element={
-                <ProtectedRoute user={user} allowedRoles={['Quarter Officer']}>
-                    <QuarterOfficerDashboard />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/guest-house-dashboard" element={
-                <ProtectedRoute user={user} allowedRoles={['Guest House Officer']}>
-                    <GuestHouseDashboard />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/user-dashboard" element={
-                <ProtectedRoute user={user} allowedRoles={['public', 'government']}>
-                    <UserDashboard user={user} />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/government-dashboard" element={
-                <ProtectedRoute user={user} allowedRoles={['government']}>
-                    <GovernmentDashboard user={user} />
-                </ProtectedRoute>
-            } />
-        </Routes>
-    );
-};
-
-AppRoutes.propTypes = {
-    user: PropTypes.object,
-};
-
-function App() {
+const AppContent = () => {
     const [user, setUser] = useState(null);
     const [verifying, setVerifying] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
+        // Ye tracker hamesha latest aane wale user ko yaad rakhega
+        let expectedAuthId = null;
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            // Jaise hi koi change ho, expected ID ko update kar do
+            expectedAuthId = currentUser ? currentUser.uid : null;
+            
             if (currentUser) {
-                const docRef = doc(db, "users", currentUser.uid);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    const userData = docSnap.data();
-                    setUser({ ...currentUser, ...userData });
-                    localStorage.setItem('userType', userData.userType);
-                    setVerifying(false);
-                } else {
-                    // This will trigger onAuthStateChanged again with a null user
-                    await signOut(auth);
+                try {
+                    const docRef = doc(db, "users", currentUser.uid);
+                    const docSnap = await getDoc(docRef);
+                    
+                    // 🛑 RACE CONDITION FIX: 
+                    // Agar data aane me late hua, aur tab tak (AdminLogin) ne user ko 
+                    // logout kar diya hai, toh data ko ignore karo aur yahin ruk jao!
+                    if (expectedAuthId !== currentUser.uid) {
+                        return; 
+                    }
+
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        const userRole = userData.userType || userData.officerType;
+
+                        // Unverified public/government users ko block karo
+                        if ((userRole === 'public' || userRole === 'government') && !currentUser.emailVerified) {
+                            await signOut(auth);
+                        } else {
+                            // Sab perfectly theek hai
+                            setUser({ ...currentUser, ...userData });
+                            localStorage.setItem('userType', userRole || 'public');
+                        }
+                    } else {
+                        await signOut(auth);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user details:", error);
                 }
             } else {
+                // User logged out hai
                 setUser(null);
                 localStorage.removeItem('userType');
-                setVerifying(false);
             }
+            setVerifying(false);
         });
 
         return () => unsubscribe();
@@ -123,12 +91,41 @@ function App() {
     }
 
     return (
+        <>
+            <Navbar user={user} />
+            <Box sx={{ p: 2.5, backgroundColor: 'background.default', minHeight: 'calc(100vh - 64px)' }}>
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/admin-login" element={<AdminLogin />} />
+                    <Route path="/officer-login" element={<OfficerLogin />} />
+                    <Route path="/guest-houses" element={<PublicGuestHouses />} />
+                    <Route path="/guesthouse/:id" element={<GuestHouseDetail />} />
+                    <Route path="/book-guesthouse/:id" element={<BookGuestHouse />} />
+                    <Route path="/quarters" element={<PublicQuarters />} />
+                    <Route path="/quarter/:quarterId" element={<QuarterDetail />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/help" element={<Help />} />
+                    <Route path="/availability" element={<Availability />} />
+                    <Route path="/payment/:applicationId" element={<Payment />} />
+                    <Route path="/status" element={<ApplicationStatus />} />
+                    <Route path="/admin-dashboard" element={<ProtectedRoute user={user} allowedRoles={['Admin']}><AdminDashboard /></ProtectedRoute>} />
+                    <Route path="/quarter-officer-dashboard" element={<ProtectedRoute user={user} allowedRoles={['Quarter Officer']}><QuarterOfficerDashboard /></ProtectedRoute>} />
+                    <Route path="/guest-house-dashboard" element={<ProtectedRoute user={user} allowedRoles={['Guest House Officer']}><GuestHouseDashboard /></ProtectedRoute>} />
+                    <Route path="/user-dashboard" element={<ProtectedRoute user={user} allowedRoles={['public', 'government']}><UserDashboard user={user} /></ProtectedRoute>} />
+                    <Route path="/government-dashboard" element={<ProtectedRoute user={user} allowedRoles={['government']}><GovernmentDashboard user={user} /></ProtectedRoute>} />
+                </Routes>
+            </Box>
+        </>
+    );
+};
+
+function App() {
+    return (
         <Router>
             <CssBaseline />
-            <Navbar user={user} />
-            <Box sx={{ p: 3, backgroundColor: 'background.default', minHeight: 'calc(100vh - 64px)' }}>
-                <AppRoutes user={user} />
-            </Box>
+            <AppContent />
         </Router>
     );
 }

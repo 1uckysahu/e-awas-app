@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Paper,
     Typography,
@@ -20,9 +20,9 @@ import {
     Grid
 } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import { Email, Lock, Visibility, VisibilityOff, Person, LockOutlined } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Email, Lock, Visibility, VisibilityOff, LockOutlined } from '@mui/icons-material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +40,14 @@ const Login = () => {
     const [captchaValue, setCaptchaValue] = useState(null);
     const recaptchaRef = useRef();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('error') === 'email_unverified') {
+            setSnackbar({ open: true, message: t('verify_email_before_login'), severity: 'warning' });
+        }
+    }, [location, t]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -61,33 +69,36 @@ const Login = () => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            if (user.emailVerified) {
-                const userDocRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userDocRef);
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
 
-                if (userDoc.exists()) {
-                    const dbUserType = userDoc.data().userType;
-                    if (dbUserType !== userType) {
-                        setSnackbar({ open: true, message: t('user_type_mismatch'), severity: 'error' });
-                        setLoading(false);
-                        return;
-                    }
-
-                    localStorage.setItem('userType', dbUserType);
+            if (userDoc.exists()) {
+                const dbUserType = userDoc.data().userType;
+                if (dbUserType !== userType) {
+                    await signOut(auth);
+                    setSnackbar({ open: true, message: t('user_type_mismatch'), severity: 'error' });
+                    setLoading(false);
+                    return;
+                }
+                
+                // FIXED: Navigate the user ONLY if their email is verified
+                if (user.emailVerified) {
                     setSnackbar({ open: true, message: t('login_successful'), severity: 'success' });
                     if (dbUserType === 'government') {
                         navigate('/government-dashboard');
-                    } else if (dbUserType === 'public') {
-                        navigate('/user-dashboard');
                     } else {
-                        navigate('/'); // Fallback to home
+                        navigate('/user-dashboard');
                     }
                 } else {
-                    setSnackbar({ open: true, message: t('user_data_not_found'), severity: 'error' });
+                    // If unverified, App.jsx will handle the actual background logout. We just show the message.
+                    setSnackbar({ open: true, message: t('verify_email_before_login'), severity: 'warning' });
                 }
+
             } else {
-                setSnackbar({ open: true, message: t('verify_email_before_login'), severity: 'warning' });
+                await signOut(auth);
+                setSnackbar({ open: true, message: t('user_data_not_found'), severity: 'error' });
             }
+
         } catch {
             setSnackbar({ open: true, message: t('invalid_email_or_password'), severity: 'error' });
         } finally {
@@ -112,6 +123,7 @@ const Login = () => {
         <ThemeProvider theme={officerTheme}>
             <CssBaseline />
              <Grid container sx={{ minHeight: '100vh' }}>
+                {/* LEFT SIDE - Exactly 50% width (md=6) */}
                 <Grid
                     size={{ xs: 12, md: 6 }}
                     sx={{
@@ -166,14 +178,16 @@ const Login = () => {
                         {t('official_housing_allotment_system')}
                     </Typography>
                 </Grid>
+
+                {/* RIGHT SIDE - Exactly 50% width (md=6) with floating Paper card */}
                 <Grid 
                     size={{ xs: 12, md: 6 }}
                     sx={{
-                        bgcolor: '#f4f6f8',
+                        background: 'linear-gradient(45deg, #8E2DE2 30%, #4A00E0 90%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        p: 3
+                        p: 2
                     }}
                 >
                 <Paper 

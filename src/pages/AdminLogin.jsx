@@ -17,7 +17,8 @@ import {
 } from '@mui/material';
 import { Email, Lock, Visibility, VisibilityOff, AdminPanelSettings } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+// 🔥 THE FIX IS HERE: Added signOut to the import list!
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth'; 
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase'; 
 import { useTranslation } from 'react-i18next';
@@ -64,6 +65,8 @@ const AdminLogin = () => {
                 setSnackbar({ open: true, message: t('login_successful'), severity: 'success' });
                 navigate('/admin-dashboard');
             } else {
+                // 🔥 THE FIX IS HERE: Successfully logs out unauthorized users without crashing!
+                await signOut(auth);
                 setSnackbar({ open: true, message: t('access_denied_admin'), severity: 'error' });
             }
         } catch (error) {
@@ -89,7 +92,7 @@ const AdminLogin = () => {
     return (
         <ThemeProvider theme={officerTheme}>
             <CssBaseline />
-            <Grid container sx={{ minHeight: '100vh' }}>
+            <Grid container sx={{ minHeight: '100vh', m: 0, p: 0, width: '100%' }}>
                 <Grid
                     size={{ xs: 12, md: 6 }}
                     sx={{
@@ -147,11 +150,11 @@ const AdminLogin = () => {
                  <Grid 
                     size={{ xs: 12, md: 6 }}
                     sx={{
-                        bgcolor: '#f4f6f8',
+                        background: 'linear-gradient(45deg, #8E2DE2 30%, #4A00E0 90%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        p: 3
+                        p: 3,
                     }}
                 >
                     <Paper

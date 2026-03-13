@@ -12,7 +12,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import { Rule, Gavel, ContactSupport } from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 
 const helpTheme = createTheme({
   palette: {
@@ -135,7 +135,17 @@ const Help = () => {
                 <Box mt={5} pt={3} borderTop={1} borderColor="grey.300">
                     <Typography variant="h6" gutterBottom>{t('need_further_assistance')}</Typography>
                     <Typography variant="body1">
-                        {t('further_assistance_desc')} <Link href={`mailto:${t('support_email')}`}>{t('support_email')}</Link> {t('or_call_us')} <Link href={`tel:${t('support_phone')}`}>{t('support_phone')}</Link>.
+                        <Trans
+                            i18nKey="further_assistance_desc"
+                            values={{
+                                email: t('support_email'),
+                                phone: t('support_phone')
+                            }}
+                            components={{
+                                emailLink: <Link href={`mailto:${t('support_email')}`} sx={{ fontWeight: 'bold' }} />,
+                                phone: <Box component="span" sx={{ fontWeight: 'bold' }} />
+                            }}
+                        />
                     </Typography>
                 </Box>
 

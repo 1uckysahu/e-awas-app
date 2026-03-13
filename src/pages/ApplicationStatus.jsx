@@ -137,7 +137,7 @@ const ApplicationStatus = () => {
     };
 
     return (
-        <Box sx={{ background: 'linear-gradient(to top, #f3e5f5, #e1bee7)', minHeight: 'calc(100vh - 64px)', p: 4 }}>
+        <Box sx={{ background: 'linear-gradient(45deg, #8E2DE2 30%, #4A00E0 90%)', minHeight: 'calc(100vh - 64px)', p: 4 }}>
             <Container component={Paper} maxWidth="md" sx={{ borderRadius: 4, p: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
                 <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
                     {t('check_application_status')}

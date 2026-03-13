@@ -173,7 +173,7 @@ const OfficerLogin = () => {
             <Grid 
                 size={{ xs: 12, md: 6 }}
                 sx={{
-                    bgcolor: '#f4f6f8',
+                  background: 'linear-gradient(45deg, #8E2DE2 30%, #4A00E0 90%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

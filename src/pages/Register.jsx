@@ -33,6 +33,10 @@ import * as yup from 'yup';
 const CLOUD_NAME = 'dyr6sb0tu';
 const UPLOAD_PRESET = 'E-awas2';
 
+// 🔥 NAYE RULES: 1MB limit aur sirf JPG allowed
+const MAX_FILE_SIZE = 1024 * 1024; // 1 MB
+const SUPPORTED_FORMATS = ['image/jpg', 'image/jpeg'];
+
 const Register = () => {
     const { t } = useTranslation();
     const [tabValue, setTabValue] = useState(0);
@@ -48,9 +52,7 @@ const Register = () => {
     };
 
     const handleCloseSnackbar = (event, reason) => {
-        if (reason === 'clickaway') {
-          return;
-        }
+        if (reason === 'clickaway') return;
         setSnackbar({ ...snackbar, open: false });
     };
 
@@ -116,11 +118,13 @@ const Register = () => {
                 <Grid 
                     size={{ xs: 12, md: 6 }}
                     sx={{
-                        bgcolor: '#f4f6f8',
+                        background: 'linear-gradient(45deg, #8E2DE2 30%, #4A00E0 90%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        p: 3
+                        p: { xs: 3, md: 7 },
+                        m: 0,
+                        height: '100%'
                     }}
                 >
                     <Paper
@@ -181,12 +185,22 @@ TabPanel.propTypes = {
   value: PropTypes.number.isRequired,
 };
 
+// 🔥 FIX: Strict Yup Validation for Photo (Size & Format)
 const getPublicUserSchema = (t) => yup.object().shape({
     fullName: yup.string().required(t('full_name_required')),
     email: yup.string().email(t('invalid_email')).required(t('email_required')),
     password: yup.string().min(6, t('password_min_length')).required(t('password_required')),
     phone: yup.string().required(t('phone_number_required')),
-    photo: yup.mixed().required(t('photo_required')),
+    photo: yup.mixed()
+        .test('fileRequired', t('photo_required'), (value) => {
+            return value && value.length > 0;
+        })
+        .test('fileSize', 'Image size must be less than 1 MB', (value) => {
+            return value && value[0] && value[0].size <= MAX_FILE_SIZE;
+        })
+        .test('fileFormat', 'Only JPG/JPEG formats are allowed', (value) => {
+            return value && value[0] && SUPPORTED_FORMATS.includes(value[0].type);
+        }),
 });
 
 const PublicUserForm = ({ togglePasswordVisibility, showPassword, setSnackbar }) => {
@@ -203,10 +217,9 @@ const PublicUserForm = ({ togglePasswordVisibility, showPassword, setSnackbar })
         const { fullName, email, password, phone, photo } = data;
 
         try {
+            const photoUrl = await uploadFile(photo[0]);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             await sendEmailVerification(userCredential.user);
-
-            const photoUrl = await uploadFile(photo[0]);
 
             await setDoc(doc(db, 'users', userCredential.user.uid), {
                 fullName,
@@ -269,18 +282,18 @@ const PublicUserForm = ({ togglePasswordVisibility, showPassword, setSnackbar })
                         defaultValue=""
                         render={({ field }) => (
                             <Button variant="outlined" component="label" fullWidth startIcon={<CloudUpload />}>
-                                {t('upload_photo')}
-                                <input type="file" hidden accept="image/*" onChange={(e) => {field.onChange(e.target.files); setPhotoPreview(URL.createObjectURL(e.target.files[0]));}} />
+                                {t('upload_photo')} (JPG, Max 1MB) {/* Updated label for clarity */}
+                                <input type="file" hidden accept=".jpg, .jpeg" onChange={(e) => {field.onChange(e.target.files); setPhotoPreview(URL.createObjectURL(e.target.files[0]));}} />
                             </Button>
                         )}
                     />
-                    {photo && (
+                    {photo && photo.length > 0 && (
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {photoPreview && <Avatar src={photoPreview} sx={{ mr: 2 }} />}
                             <Typography variant="body2">{photo[0].name}</Typography>
                         </Box>
                     )}
-                     {errors.photo && <Typography color="error" variant="body2">{errors.photo.message}</Typography>}
+                     {errors.photo && <Typography color="error" variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>{errors.photo.message}</Typography>}
                 </Stack>
                 <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={{ fontWeight: 'bold' }}>{loading ? <CircularProgress size={24} color="inherit" /> : t('register')}</Button>
             </Stack>
@@ -294,14 +307,24 @@ PublicUserForm.propTypes = {
   setSnackbar: PropTypes.func.isRequired,
 };
 
+// 🔥 FIX: Strict Yup Validation + Optional Official Email (Size & Format)
 const getGovernmentEmployeeSchema = (t) => yup.object().shape({
     fullName: yup.string().required(t('full_name_required')),
     email: yup.string().email(t('invalid_email')).required(t('email_required')),
     password: yup.string().min(6, t('password_min_length')).required(t('password_required')),
     phone: yup.string().required(t('phone_number_required')),
     department: yup.string().required(t('department_required')),
-    officialEmail: yup.string().email(t('invalid_email')),
-    photo: yup.mixed().required(t('photo_required')),
+    officialEmail: yup.string().email(t('invalid_email')).nullable().notRequired(),
+    photo: yup.mixed()
+        .test('fileRequired', t('photo_required'), (value) => {
+            return value && value.length > 0;
+        })
+        .test('fileSize', 'Image size must be less than 1 MB', (value) => {
+            return value && value[0] && value[0].size <= MAX_FILE_SIZE;
+        })
+        .test('fileFormat', 'Only JPG/JPEG formats are allowed', (value) => {
+            return value && value[0] && SUPPORTED_FORMATS.includes(value[0].type);
+        }),
 });
 
 const GovernmentEmployeeForm = ({ togglePasswordVisibility, showPassword, setSnackbar }) => {
@@ -318,10 +341,9 @@ const GovernmentEmployeeForm = ({ togglePasswordVisibility, showPassword, setSna
         const { fullName, email, password, phone, photo, department, officialEmail } = data;
 
         try {
+            const photoUrl = await uploadFile(photo[0]);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             await sendEmailVerification(userCredential.user);
-
-            const photoUrl = await uploadFile(photo[0]);
 
             await setDoc(doc(db, 'users', userCredential.user.uid), {
                 fullName,
@@ -329,7 +351,7 @@ const GovernmentEmployeeForm = ({ togglePasswordVisibility, showPassword, setSna
                 phone,
                 photoUrl,
                 department,
-                officialEmail,
+                officialEmail: officialEmail || null, 
                 userType: 'government',
             });
 
@@ -402,18 +424,18 @@ const GovernmentEmployeeForm = ({ togglePasswordVisibility, showPassword, setSna
                         defaultValue=""
                         render={({ field }) => (
                             <Button variant="outlined" component="label" fullWidth startIcon={<CloudUpload />}>
-                                {t('upload_passport_photo')}
-                                <input type="file" hidden accept="image/*" onChange={(e) => {field.onChange(e.target.files); setPhotoPreview(URL.createObjectURL(e.target.files[0]));}}/>
+                                {t('upload_passport_photo')} (JPG, Max 1MB) {/* Updated label */}
+                                <input type="file" hidden accept=".jpg, .jpeg" onChange={(e) => {field.onChange(e.target.files); setPhotoPreview(URL.createObjectURL(e.target.files[0]));}}/>
                             </Button>
                         )}
                     />
-                    {photo && (
+                    {photo && photo.length > 0 && (
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {photoPreview && <Avatar src={photoPreview} sx={{ mr: 2 }} />}
                             <Typography variant="body2">{photo[0].name}</Typography>
                         </Box>
                     )}
-                    {errors.photo && <Typography color="error" variant="body2">{errors.photo.message}</Typography>}
+                    {errors.photo && <Typography color="error" variant="body2" sx={{ textAlign: 'center', fontWeight: 'bold' }}>{errors.photo.message}</Typography>}
                 </Stack>
                 <Button type="submit" fullWidth variant="contained" size="large" disabled={loading} sx={{ fontWeight: 'bold' }}>{loading ? <CircularProgress size={24} color="inherit"/> : t('register')}</Button>
             </Stack>
