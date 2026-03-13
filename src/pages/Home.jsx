@@ -1,4 +1,3 @@
-
 import { Typography, Container, Box, Grid, Paper, Button, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { styled, keyframes } from '@mui/material/styles';
 import { useTranslation, Trans } from 'react-i18next';
@@ -54,7 +53,7 @@ const HeroBox = styled(Box)(({ theme }) => ({
 
 const OfferingsSection = styled(Box)(({ theme }) => ({
     padding: theme.spacing(12, 2),
-    backgroundColor: '#f4f6f8', // A slightly off-white background
+    backgroundColor: '#f4f6f8',
 }));
 
 const OfferingCard = styled(Paper, {
@@ -105,12 +104,36 @@ const FaqSection = styled(Box)(({ theme }) => ({
     backgroundColor: theme.palette.background.default,
 }));
 
-const Footer = styled(Box)(({ theme }) => ({
-    padding: theme.spacing(6, 2),
-    backgroundColor: '#2c3e50',
+const Footer = styled('footer')(({ theme }) => ({
+    position: 'relative',
+    padding: theme.spacing(8, 2),
     color: 'white',
-    textAlign: 'center'
+    textAlign: 'center',
+    overflow: 'hidden',
 }));
+
+const BackgroundVideo = styled('video')({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  width: 'auto',
+  height: 'auto',
+  minWidth: '100%',
+  minHeight: '100%',
+  transform: 'translate(-50%, -50%)',
+  zIndex: 0,
+  objectFit: 'cover',
+});
+
+const VideoOverlay = styled(Box)({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(44, 62, 80, 0.5)',
+  zIndex: 1,
+});
 
 
 const Home = () => {
@@ -148,13 +171,15 @@ const Home = () => {
           </Typography>
         </Container>
       </HeroBox>
+
       <OfferingsSection>
         <Container maxWidth="xl">
             <Typography variant="h2" component="h2" align="center" gutterBottom sx={{ mb: 10, fontWeight: 'bold', color: '#34495e' }}>
                 {t('explore_our_offerings')}
             </Typography>
             <Grid container spacing={2} justifyContent="center">
-            <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+                {/* Updated Grid sizing here */}
+                <Grid size={{ xs: 12, sm: 6, md: 6 }}>
                     <OfferingCard bgimage="https://i.ibb.co/JwFfPQCL/Gemini-Generated-Image-nrp1ypnrp1ypnrp1.png">
                         <Box className="offering-content">
                             <AssuredWorkloadIcon sx={{ fontSize: 60, mb: 2 }} />
@@ -170,6 +195,7 @@ const Home = () => {
                         </Box>
                     </OfferingCard>
                 </Grid>
+                {/* Updated Grid sizing here */}
                 <Grid size={{ xs: 12, sm: 6, md: 6 }}>
                     <OfferingCard bgimage="https://i.ibb.co/N2V8FCKJ/Gemini-Generated-Image-tou6botou6botou6.png">
                         <Box className="offering-content">
@@ -215,12 +241,26 @@ const Home = () => {
       </FaqSection>
 
       <Footer>
-          <Container maxWidth="lg">
-            <Typography variant="h6" gutterBottom>{t('need_further_assistance')}</Typography>
-            <Typography sx={{ mb: 2 }}>
-                {t('further_assistance_desc')} <a href={'mailto:' + t('support_email')} style={{color: '#ff9800'}}>{t('support_email')}</a> {t('or_call_us')} <span style={{color: '#ff9800'}}>{t('support_phone')}</span>.
+        <BackgroundVideo autoPlay loop muted playsInline>
+            <source src="/bgvideo.mp4" type="video/mp4" />
+        </BackgroundVideo>
+        <VideoOverlay />
+          <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+            <Typography variant="h5" component="h3" gutterBottom sx={{ fontWeight: 'bold' }}>{t('need_further_assistance')}</Typography>
+            <Typography sx={{ mb: 2, fontSize: '1.1rem', maxWidth: '700px', mx: 'auto' }}>
+                 <Trans
+                    i18nKey="further_assistance_desc"
+                    values={{
+                        email: t('support_email'),
+                        phone: t('support_phone')
+                    }}
+                    components={{
+                        emailLink: <a href={`mailto:${t('support_email')}`} style={{color: '#ff9800', textDecoration: 'none', fontWeight: 'bold'}} />,
+                        phone: <span style={{color: '#ff9800', fontWeight: 'bold'}} />
+                    }}
+                />
             </Typography>
-            <Typography variant="body2">{t('copyright', { year: new Date().getFullYear() })}</Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('copyright', { year: new Date().getFullYear() })}</Typography>
           </Container>
       </Footer>
     </Box>
